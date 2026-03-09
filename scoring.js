@@ -22,29 +22,81 @@
   }
 
   function getMovementScore(steps) {
-    if (steps >= 10000) return 1.0;
-    if (steps >= 8000) return 0.9;
-    if (steps >= 6500) return 0.8;
-    if (steps >= 5000) return 0.7;
-    if (steps >= 4000) return 0.55;
-    if (steps >= 3000) return 0.4;
-    if (steps >= 2000) return 0.25;
-    return 0.1;
+    if (steps >= 15000) return 1.5;
+    if (steps >= 13000) return 1.4;
+    if (steps >= 12000) return 1.3;
+    if (steps >= 10000) return 1.2;
+    if (steps >= 8500) return 1.05;
+    if (steps >= 7000) return 0.9;
+    if (steps >= 5500) return 0.7;
+    if (steps >= 4000) return 0.5;
+    if (steps >= 2500) return 0.3;
+    return 0.0;
   }
 
   function getExerciseDailyScore(minutes) {
-    if (minutes >= 45) return 0.7;
-    if (minutes >= 30) return 0.6;
-    if (minutes >= 20) return 0.45;
-    if (minutes >= 10) return 0.25;
-    if (minutes >= 1) return 0.1;
+    if (minutes >= 45) return 0.9;
+    if (minutes >= 30) return 0.75;
+    if (minutes >= 20) return 0.55;
+    if (minutes >= 10) return 0.3;
+    if (minutes >= 1) return 0.15;
     return 0.0;
   }
 
   function getActivityComboBonus(steps, exercise) {
-    if (steps >= 8000 && exercise >= 30) return 0.3;
-    if (steps >= 5000 && exercise >= 20) return 0.2;
+    if (steps >= 8000 && exercise >= 30) return 0.25;
+    if (steps >= 6000 && exercise >= 20) return 0.15;
+    if (steps >= 5000 && exercise >= 10) return 0.1;
     return 0.0;
+  }
+
+  function getStepEquivalentMinutes(steps) {
+    const baseMovement = Math.max(0, (steps - 4000) / 200);
+    const purposefulWalking = Math.max(0, (steps - 8000) / 120);
+    return baseMovement + purposefulWalking;
+  }
+
+  function getWeeklyActivityMetric(last7Entries) {
+    const exerciseMinutes = last7Entries.reduce(
+      (sum, entry) => sum + asNumberOrZero(entry.exercise),
+      0
+    );
+    const stepMinutes = last7Entries.reduce(
+      (sum, entry) => sum + getStepEquivalentMinutes(asNumberOrZero(entry.steps)),
+      0
+    );
+    const totalMinutes = exerciseMinutes + stepMinutes;
+
+    if (totalMinutes >= 300) {
+      return { totalMinutes, weeklyActivityScore: 1.0, weeklyActivityStatus: "Very active week" };
+    }
+    if (totalMinutes >= 150) {
+      return { totalMinutes, weeklyActivityScore: 0.9, weeklyActivityStatus: "On target" };
+    }
+    if (totalMinutes >= 120) {
+      return { totalMinutes, weeklyActivityScore: 0.75, weeklyActivityStatus: "Nearly there" };
+    }
+    if (totalMinutes >= 90) {
+      return { totalMinutes, weeklyActivityScore: 0.6, weeklyActivityStatus: "Building" };
+    }
+    if (totalMinutes >= 60) {
+      return { totalMinutes, weeklyActivityScore: 0.4, weeklyActivityStatus: "Some activity" };
+    }
+    if (totalMinutes >= 30) {
+      return { totalMinutes, weeklyActivityScore: 0.2, weeklyActivityStatus: "Low" };
+    }
+    return { totalMinutes, weeklyActivityScore: 0.0, weeklyActivityStatus: "Very low" };
+  }
+
+  function getWeeklyExerciseMetric(last7Entries) {
+    const activityMetric = getWeeklyActivityMetric(last7Entries);
+    return {
+      totalMinutes: activityMetric.totalMinutes,
+      weeklyActivityScore: activityMetric.weeklyActivityScore,
+      weeklyActivityStatus: activityMetric.weeklyActivityStatus,
+      weeklyExerciseScore: activityMetric.weeklyActivityScore,
+      weeklyExerciseStatus: activityMetric.weeklyActivityStatus
+    };
   }
 
   function getSleepDailyScore(hours) {
@@ -133,17 +185,6 @@
   function averageScore(entries) {
     if (!entries.length) return null;
     return entries.reduce((sum, item) => sum + item.total, 0) / entries.length;
-  }
-
-  function getWeeklyExerciseMetric(last7Entries) {
-    const totalMinutes = last7Entries.reduce((sum, entry) => sum + asNumberOrZero(entry.exercise), 0);
-    if (totalMinutes >= 180) return { totalMinutes, weeklyExerciseScore: 1.0, weeklyExerciseStatus: "Strong week" };
-    if (totalMinutes >= 150) return { totalMinutes, weeklyExerciseScore: 0.9, weeklyExerciseStatus: "On target" };
-    if (totalMinutes >= 120) return { totalMinutes, weeklyExerciseScore: 0.75, weeklyExerciseStatus: "Nearly there" };
-    if (totalMinutes >= 90) return { totalMinutes, weeklyExerciseScore: 0.6, weeklyExerciseStatus: "Building" };
-    if (totalMinutes >= 60) return { totalMinutes, weeklyExerciseScore: 0.4, weeklyExerciseStatus: "Some activity" };
-    if (totalMinutes >= 30) return { totalMinutes, weeklyExerciseScore: 0.2, weeklyExerciseStatus: "Low" };
-    return { totalMinutes, weeklyExerciseScore: 0.0, weeklyExerciseStatus: "Very low" };
   }
 
   function getWeeklyAlcoholMetric(last7Entries) {
@@ -265,6 +306,7 @@
     calculateDailyScore,
     calculateHealthScore,
     getScoreInterpretation,
+    getWeeklyActivityMetric,
     getWeeklyExerciseMetric,
     getWeeklyAlcoholMetric
   };
