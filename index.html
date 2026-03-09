@@ -26,6 +26,8 @@
       --sleep: #14b8a6;
       --sleepQuality: #06b6d4;
       --mood: #ec4899;
+      --phd: #6366f1;
+      --reading: #f97316;
       --accent: #111827;
       --surface: #f8fafc;
     }
@@ -246,6 +248,11 @@
     .log-domain-recovery {
       --domain-header-bg: linear-gradient(180deg, #f0fdfa 0%, #f5f3ff 100%);
       --domain-content-bg: #fcfcff;
+    }
+
+    .log-domain-personal {
+      --domain-header-bg: linear-gradient(180deg, #eef2ff 0%, #fff7ed 100%);
+      --domain-content-bg: #fffefe;
     }
 
     .dot {
@@ -811,8 +818,6 @@
       <p>Log daily habits, review trends, and build toward your own health goals without making it feel like pass or fail.</p>
       <div class="top-meta">
         <div class="chip" id="heroDate">Today</div>
-        <div class="chip" id="entryStatusChip">No entry loaded</div>
-        <div class="chip" id="dataModeChip">Local data</div>
       </div>
     </section>
 
@@ -1018,6 +1023,43 @@
               </div>
             </div>
           </div>
+
+          <div class="log-domain log-domain-personal">
+            <div class="log-domain-header section-heading">
+              <h3 class="section-title">
+                <span class="metric-icon" aria-hidden="true">🚀</span>
+                <span>Personal development</span>
+              </h3>
+              <span class="subtle">Tracked for insight, not included in health score</span>
+            </div>
+            <div class="field-grid log-domain-content">
+              <div class="field">
+                <div class="field-header">
+                  <div class="field-label">
+                    <span class="label-icon" style="--icon-bg:#e0e7ff; --icon-color:#4338ca;">
+                      <span class="metric-icon" aria-hidden="true">🎓</span>
+                    </span>
+                    <span>PhD minutes</span>
+                  </div>
+                </div>
+                <div class="input-row"><input type="number" id="phd" min="0" step="1" placeholder="0" /></div>
+                <small>Minutes spent on PhD work for the day.</small>
+              </div>
+
+              <div class="field">
+                <div class="field-header">
+                  <div class="field-label">
+                    <span class="label-icon" style="--icon-bg:#ffedd5; --icon-color:#c2410c;">
+                      <span class="metric-icon" aria-hidden="true">📚</span>
+                    </span>
+                    <span>Reading minutes</span>
+                  </div>
+                </div>
+                <div class="input-row"><input type="number" id="reading" min="0" step="1" placeholder="0" /></div>
+                <small>Minutes spent reading for learning or personal growth.</small>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="button-row">
@@ -1056,6 +1098,7 @@
             <option value="food">Food</option>
             <option value="activity">Activity</option>
             <option value="recovery">Recovery and wellbeing</option>
+            <option value="personal">Personal development</option>
             <option value="all">Everything</option>
           </select>
           <label class="legend-item" style="cursor:pointer; min-width: 180px; justify-content: center;">
@@ -1110,7 +1153,7 @@
     };
     const LEGACY_DEMO_KEYS = ["healthDataDemo", "healthDataMode", "healthDataDemoSeed"];
 
-    const fields = ["fruit", "veg", "steps", "exercise", "alcohol", "sleep", "sleepQuality", "mood"];
+    const fields = ["fruit", "veg", "steps", "exercise", "alcohol", "sleep", "sleepQuality", "mood", "phd", "reading"];
 
     const metricMeta = {
       fruit: { label: "Fruit", color: getCssVar("--fruit"), decimals: 1, goodDirection: "up" },
@@ -1120,14 +1163,17 @@
       alcohol: { label: "Alcohol units", color: getCssVar("--alcohol"), decimals: 1, goodDirection: "down" },
       sleep: { label: "Sleep hours", color: getCssVar("--sleep"), decimals: 1, goodDirection: "target", targetMin: 7, targetMax: 9 },
       sleepQuality: { label: "Sleep quality", color: getCssVar("--sleepQuality"), decimals: 1, goodDirection: "up" },
-      mood: { label: "Mood", color: getCssVar("--mood"), decimals: 1, goodDirection: "up" }
+      mood: { label: "Mood", color: getCssVar("--mood"), decimals: 1, goodDirection: "up" },
+      phd: { label: "PhD 🎓 mins", color: getCssVar("--phd"), decimals: 0, goodDirection: "up" },
+      reading: { label: "Reading 📚 mins", color: getCssVar("--reading"), decimals: 0, goodDirection: "up" }
     };
 
     const chartGroups = {
       food: ["fruit", "veg"],
       activity: ["steps", "exercise"],
       recovery: ["sleep", "sleepQuality", "mood", "alcohol"],
-      all: ["fruit", "veg", "steps", "exercise", "sleep", "sleepQuality", "mood", "alcohol"]
+      personal: ["phd", "reading"],
+      all: ["fruit", "veg", "steps", "exercise", "sleep", "sleepQuality", "mood", "alcohol", "phd", "reading"]
     };
 
     let chartInstances = [];
@@ -1193,7 +1239,10 @@
       document.getElementById("displayDateText").textContent = `Viewing ${formatDisplayDate(dateString)}`;
       document.getElementById("heroDate").textContent = formatDisplayDate(getToday());
       const hasEntry = Boolean(getAllData()[dateString]);
-      document.getElementById("entryStatusChip").textContent = hasEntry ? "Existing entry loaded" : "New entry";
+      const statusChip = document.getElementById("entryStatusChip");
+      if (statusChip) {
+        statusChip.textContent = hasEntry ? "Existing entry loaded" : "New entry";
+      }
     }
 
     function loadEntryForDate(dateString) {
@@ -1597,6 +1646,8 @@
         keys = chartGroups.all;
       } else if (groupKey === "recovery") {
         keys = ["sleep", "sleepQuality", "mood", "alcohol"];
+      } else if (groupKey === "personal") {
+        keys = ["phd", "reading"];
       } else {
         keys = chartGroups[groupKey];
       }
@@ -1642,7 +1693,9 @@
           { key: "sleep", title: "Sleep duration" },
           { key: "sleepQuality", title: "Sleep quality" },
           { key: "mood", title: "Mood" },
-          { key: "alcohol", title: "Alcohol units" }
+          { key: "alcohol", title: "Alcohol units" },
+          { key: "phd", title: "PhD minutes" },
+          { key: "reading", title: "Reading minutes" }
         ].forEach(section => {
           const wrap = createChartCanvas(section.key, section.title);
           chartArea.appendChild(wrap);
@@ -1820,6 +1873,8 @@
           <td>${formatValue(entry.exercise)}</td>
           <td>${formatValue(entry.sleep)}</td>
           <td>${formatValue(entry.mood)}</td>
+          <td>${formatValue(entry.phd, 0)}</td>
+          <td>${formatValue(entry.reading, 0)}</td>
           <td>
             <div class="history-actions">
               <button class="small-btn edit-btn" onclick="editEntry('${entry.date}')">Edit</button>
@@ -1840,6 +1895,8 @@
               <th>Exercise</th>
               <th>Sleep</th>
               <th>Mood</th>
+              <th>PhD</th>
+              <th>Reading</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -2090,7 +2147,6 @@
     LEGACY_DEMO_KEYS.forEach(key => localStorage.removeItem(key));
 
     const today = getToday();
-    document.getElementById("dataModeChip").textContent = "Local data";
     document.getElementById("entryDate").value = today;
     loadEntryForDate(today);
     renderAverages();
